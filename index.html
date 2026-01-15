@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoData Zaruma - Portal Geográfico Inteligente</title>
+
+    <!-- Leaflet & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --surface: #ffffff;
+            --background: #f1f5f9;
+            --text-main: #0f172a;
+            --text-light: #64748b;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            background-color: var(--background);
+        }
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: 400px;
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            z-index: 1000;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+        }
+
+        .sidebar-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header p {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        /* Section Cards */
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .card-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-alert {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        /* Forms & Inputs */
+        .input-group {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            padding-right: 40px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary);
+        }
+
+        /* Layer Controls */
+        .layer-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            margin-bottom: 8px;
+            border: 1px solid transparent;
+        }
+
+        .layer-item:hover {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .layer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Action Buttons */
+        .grid-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-turismo {
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+
+        .btn-mineria {
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+        }
+
+        .btn-riesgos {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+        }
+
+        .btn-reportar {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            font-size: 15px;
+            padding: 14px;
+        }
+
+        /* Submenu */
+        .submenu {
+            display: none;
+            margin-top: 12px;
+            padding: 10px;
+            background: #fef2f2;
+            border-radius: 8px;
+            border: 1px solid #fee2e2;
+            animation: slideDown 0.3s ease;
+        }
+
+        .submenu.active {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .sub-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: white;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            text-align: left;
+            padding-left: 16px;
+            transition: all 0.2s;
+        }
+
+        .sub-btn:hover {
+            background: #fee2e2;
+        }
+
+        .sub-btn:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Results Box */
+        #results {
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            padding: 16px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        #results.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        #results h4 {
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+        }
+
+        #results-content {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        #results-content ul {
+            padding-left: 20px;
+        }
+
+        #results-content li {
+            margin-bottom: 4px;
+        }
+
+        /* Map Container */
+        #map-container {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Custom Floating Controls */
+        .map-overlay-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--text-main);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+            color: var(--primary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background: white;
+            width: 500px;
+            max-width: 90%;
+            border-radius: 16px;
+            padding: 0;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--danger);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .submit-btn:disabled {
+            background: var(--secondary);
+            opacity: 0.7;
+        }
+
+        /* Floating Instruction */
+        .click-instruction {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-main);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .click-instruction.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Loading */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: absolute;
+                height: 100%;
+                transform: translateX(-100%);
+            }
+
+            #sidebar.open {
+                transform: translateX(0);
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+        }
+
+        .menu-toggle {
+            display: none;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" id="menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h1><i class="fas fa-map-marked-alt"></i> GeoData Zaruma</h1>
+            <p>Portal de Información Geográfica & Catastral</p>
+        </div>
+
+        <div class="sidebar-content">
+            <!-- Búsqueda -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-search"></i> Consulta Catastral</h3>
+                </div>
+                <div class="info-alert">
+                    <i class="fas fa-info-circle"></i> Ingrese la clave catastral completa para localizar el predio.
+                </div>
+                <div class="input-group">
+                    <input type="text" id="clave-catastral" placeholder="Ej: 070150...">
+                    <i class="fas fa-barcode input-icon"></i>
+                </div>
+                <div id="catastro-result" class="catastro-result"
+                    style="display:none; padding:10px; background:#dcfce7; color:#166534; border-radius:8px; font-size:13px;">
+                </div>
+            </div>
+
+            <!-- Capas -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-layer-group"></i> Capas & Mapas</h3>
+                </div>
+
+                <!-- Base Maps Logic will be handled via JS/Leaflet control, but we add custom opacity controls here for WMS -->
+                <div class="layer-item">
+                    <div class="layer-header">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="layer-zaruma">
+                            <span>Límites Zaruma</span>
+                        </label>
+                        <span id="val-zaruma" style="font-size:12px; color:#64748b;">80%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="80" id="opacity-zaruma">
+                </div>
+
+                <div class="layer-item">
+                    <div class="layer-header">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="layer-cantones">
+                            <span>Cantones Ecuador</span>
+                        </label>
+                        <span id="val-cantones" style="font-size:12px; color:#64748b;">70%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="70" id="opacity-cantones">
+                </div>
+
+                <div class="layer-item">
+                    <div class="layer-header">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="layer-catastro">
+                            <span>Catastro Urbano (WMS)</span>
+                        </label>
+                        <span id="val-catastro" style="font-size:12px; color:#64748b;">70%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="70" id="opacity-catastro">
+                </div>
+
+                <div class="layer-item">
+                    <div class="layer-header">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="layer-eloro">
+                            <span>Cantones El Oro</span>
+                        </label>
+                        <span id="val-eloro" style="font-size:12px; color:#64748b;">70%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="70" id="opacity-eloro">
+                </div>
+
+                <div class="layer-item">
+                    <div class="layer-header">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="layer-parroquias">
+                            <span>Parroquias</span>
+                        </label>
+                        <span id="val-parroquias" style="font-size:12px; color:#64748b;">70%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="70" id="opacity-parroquias">
+                </div>
+            </div>
+
+            <!-- Herramientas -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-tools"></i> Herramientas</h3>
+                </div>
+                <div class="grid-buttons">
+                    <button class="btn btn-turismo" id="btn-turismo">
+                        <i class="fas fa-landmark"></i> Turismo
+                    </button>
+                    <button class="btn btn-mineria" id="btn-mineria">
+                        <i class="fas fa-hard-hat"></i> Minería
+                    </button>
+                    <button class="btn btn-riesgos" id="btn-riesgos">
+                        <i class="fas fa-exclamation-triangle"></i> Riesgos
+                    </button>
+                    <button class="btn btn-reportar" id="btn-reportar">
+                        <i class="fas fa-comment-medical"></i> Reportar Incidencia
+                    </button>
+                </div>
+
+                <!-- Submenu Riesgos -->
+                <div class="submenu" id="riesgos-menu">
+                    <button class="sub-btn" id="btn-deslaves"><i class="fas fa-mountain"></i> Zonas de Deslaves</button>
+                    <button class="sub-btn" id="btn-socavones"><i class="fas fa-hole"></i> Riesgo de Socavones</button>
+                    <button class="sub-btn" id="btn-incendios"><i class="fas fa-fire"></i> Amenaza de Incendios</button>
+                </div>
+
+                <!-- Info Box for Results -->
+                <div id="results">
+                    <h4 id="results-title">Titulo</h4>
+                    <div id="results-content">Contenido...</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">
+                &copy; 2026 GAD Municipal de Zaruma
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Area -->
+    <div id="map-container">
+        <div class="click-instruction" id="click-instruction">
+            <i class="fas fa-map-pin"></i> Haz clic en el mapa para marcar la ubicación exacta
+        </div>
+
+        <div class="map-overlay-controls">
+            <!-- Placeholder for custom controls if needed later -->
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <!-- Modal Reporte -->
+    <div id="report-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Nuevo Reporte Ciudadano</h2>
+                <button class="close-btn" id="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="modal-body">
+                <div
+                    style="background: #eff6ff; padding:12px; border-radius:8px; margin-bottom:20px; font-size:13px; color:#1e40af; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-location-arrow"></i>
+                    <span id="location-display">Ubicación no seleccionada</span>
+                </div>
+
+                <form id="report-form">
+                    <div class="form-group">
+                        <label>Categoría del Problema</label>
+                        <select id="tipo-problema" required>
+                            <option value="">Seleccione una categoría...</option>
+                            <option value="mineria_ilegal">⛏️ Minería Ilegal / Irregular</option>
+                            <option value="falta_agua">💧 Problemas de Agua Potable</option>
+                            <option value="falta_luz">💡 Alumbrado Público / Electricidad</option>
+                            <option value="incendio">🔥 Conato de Incendio</option>
+                            <option value="deforestacion">🌳 Tala Indebida / Deforestación</option>
+                            <option value="deslizamientos">⛰️ Deslizamientos / Derrumbes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Información Personal (Opcional)</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <input type="text" id="nombre-reportante" placeholder="Su Nombre">
+                            <input type="tel" id="telefono-reportante" placeholder="Celular">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Detalle de la Incidencia</label>
+                        <textarea id="descripcion" required
+                            placeholder="Describa brevemente la situación, referencias del lugar, etc..."></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submit-btn">
+                        <i class="fas fa-paper-plane"></i> Enviar Reporte
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // ============================================
+        // CONFIGURACIÓN
+        // ============================================
+        const CONFIG = {
+            telegramToken: '8274824873:AAEBVcDwqkXXD_vmGD4pTT7bWVlRBNTknrQ',
+            telegramChatId: '405891742',
+            supabaseUrl: 'https://tdzikrwmemfsfkcstlrj.supabase.co',
+            supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkemlrcndtZW1mc2ZrY3N0bHJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NDgzODIsImV4cCI6MjA4MTQyNDM4Mn0.YazAON8VQbL3al3kFPFhCfUfs4y8DiFFwmbKuI5ZFUY'
+        };
+
+        // Variables globales
+        let reportMode = false;
+        let reportMarker = null;
+        let reportCoords = null;
+        let catastroMarker = null;
+        let catastroLayer = null;
+
+        // ============================================
+        // INICIALIZAR MAPA
+        // ============================================
+
+        // Define Base Maps
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        });
+
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 19
+        });
+
+        const darkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        });
+
+        const map = L.map('map', {
+            center: [-3.6890, -79.6150], // Coordenadas ajustadas al centro urbano
+            zoom: 15,
+            layers: [osm], // Default layer
+            zoomControl: false // We will add it in a better position
+        });
+
+        // Custom Zoom Control
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Base Maps Control
+        const baseMaps = {
+            "Mapa Estándar": osm,
+            "Satélite (Esri)": satellite,
+            "Modo Oscuro": darkMatter
+        };
+
+        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+
+        // ============================================
+        // CONFIGURAR CAPAS WMS
+        // ============================================
+        // Note: Keeping Localhost URLs as in original file
+        const wmsLayers = {
+            cantones: L.tileLayer.wms('http://localhost:8080/geoserver/GeoData/wms', {
+                layers: 'GeoData:Cantones_Ec',
+                format: 'image/png',
+                transparent: true,
+                opacity: 0.7,
+                crs: L.CRS.EPSG4326,
+                maxZoom: 25
+            }),
+
+            zaruma: L.tileLayer.wms('http://localhost:8080/geoserver/GeoData/wms', {
+                layers: 'GeoData:Canton_Zaruma',
+                format: 'image/png',
+                transparent: true,
+                opacity: 0.8,
+                crs: L.CRS.EPSG4326,
+                maxZoom: 25
+            }),
+
+            catastro: L.tileLayer.wms('http://localhost:8080/geoserver/GeoData/wms', {
+                layers: 'GeoData:catastro_urbano',
+                format: 'image/png',
+                transparent: true,
+                opacity: 0.7,
+                crs: L.CRS.EPSG4326,
+                maxZoom: 25
+            }),
+
+            eloro: L.tileLayer.wms('http://localhost:8080/geoserver/GeoData/wms', {
+                layers: 'GeoData:Cantones_de_El_Oro',
+                format: 'image/png',
+                transparent: true,
+                opacity: 0.7,
+                crs: L.CRS.EPSG4326,
+                maxZoom: 25
+            }),
+
+            parroquias: L.tileLayer.wms('http://localhost:8080/geoserver/GeoData/wms', {
+                layers: 'GeoData:Parroquias_de_Zaruma',
+                format: 'image/png',
+                transparent: true,
+                opacity: 0.7,
+                crs: L.CRS.EPSG4326,
+                maxZoom: 25
+            })
+        };
+
+        // ============================================
+        // BÚSQUEDA CATASTRAL
+        // ============================================
+        let searchTimeout;
+
+        async function buscarCatastro(claveCatastral) {
+            const resultDiv = document.getElementById('catastro-result');
+
+            if (!claveCatastral || claveCatastral.trim() === '') {
+                resultDiv.style.display = 'none';
+                if (catastroMarker) {
+                    map.removeLayer(catastroMarker);
+                    catastroMarker = null;
+                }
+                if (catastroLayer) {
+                    map.removeLayer(catastroLayer);
+                    catastroLayer = null;
+                }
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#e0f2fe';
+            resultDiv.style.color = '#0369a1';
+            resultDiv.innerHTML = '<span class="loading-spinner"></span> Buscando en la base de datos...';
+
+            try {
+                const response = await fetch(
+                    `${CONFIG.supabaseUrl}/rest/v1/catastro_urbano?clavetotal=eq.${encodeURIComponent(claveCatastral)}`,
+                    {
+                        headers: {
+                            'apikey': CONFIG.supabaseKey,
+                            'Authorization': `Bearer ${CONFIG.supabaseKey}`
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const lote = data[0];
+
+                    resultDiv.style.background = '#d1fae5';
+                    resultDiv.style.color = '#065f46';
+                    resultDiv.innerHTML = `
+                        <strong><i class="fas fa-check-circle"></i> Lote encontrado:</strong><br>
+                        <strong>Clave:</strong> ${lote.clavetotal || 'N/A'}<br>
+                        ${lote.area_ha ? `<strong>Área:</strong> ${lote.area_ha} ha<br>` : ''}
+                        ${lote.perimetro ? `<strong>Perímetro:</strong> ${lote.perimetro} m` : ''}
+                    `;
+
+                    if (lote.geom) {
+                        const geojson = typeof lote.geom === 'string' ? JSON.parse(lote.geom) : lote.geom;
+
+                        if (catastroLayer) map.removeLayer(catastroLayer);
+
+                        catastroLayer = L.geoJSON(geojson, {
+                            style: {
+                                color: '#ef4444',
+                                weight: 3,
+                                fillColor: '#ef4444',
+                                fillOpacity: 0.3
+                            }
+                        }).addTo(map);
+
+                        map.fitBounds(catastroLayer.getBounds(), { padding: [100, 100], maxZoom: 19 });
+
+                        const center = catastroLayer.getBounds().getCenter();
+
+                        if (catastroMarker) map.removeLayer(catastroMarker);
+
+                        catastroMarker = L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'catastro-label',
+                                html: `<div style="background:var(--danger); color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; white-space:nowrap; box-shadow:0 2px 4px rgba(0,0,0,0.2);">📍 ${lote.clavetotal}</div>`,
+                                iconSize: [120, 30]
+                            })
+                        }).addTo(map);
+
+                        // Auto-enable catastro layer if needed
+                        if (!map.hasLayer(wmsLayers.catastro)) {
+                            map.addLayer(wmsLayers.catastro);
+                            document.getElementById('layer-catastro').checked = true;
+                        }
+                    }
+                } else {
+                    resultDiv.style.background = '#fee2e2';
+                    resultDiv.style.color = '#b91c1c';
+                    resultDiv.innerHTML = '<i class="fas fa-times-circle"></i> No se encontró ningún lote con esa clave';
+                }
+            } catch (error) {
+                console.error(error);
+                resultDiv.style.background = '#fee2e2';
+                resultDiv.style.color = '#b91c1c';
+                resultDiv.innerHTML = '<i class="fas fa-wifi"></i> Error de conexión.';
+            }
+        }
+
+        // ============================================
+        // CONTROL DE CAPAS
+        // ============================================
+        function setupLayerControls() {
+            const layers = ['cantones', 'zaruma', 'catastro', 'eloro', 'parroquias'];
+
+            layers.forEach(layer => {
+                const checkbox = document.getElementById(`layer-${layer}`);
+                const slider = document.getElementById(`opacity-${layer}`);
+                const label = document.getElementById(`val-${layer}`);
+
+                if (checkbox) {
+                    checkbox.addEventListener('change', function (e) {
+                        if (e.target.checked) map.addLayer(wmsLayers[layer]);
+                        else map.removeLayer(wmsLayers[layer]);
+                    });
+                }
+
+                if (slider) {
+                    slider.addEventListener('input', function (e) {
+                        const val = e.target.value;
+                        wmsLayers[layer].setOpacity(val / 100);
+                        if (label) label.textContent = val + '%';
+                    });
+                }
+            });
+        }
+
+        // ============================================
+        // FUNCIONES DE CONSULTA
+        // ============================================
+        function mostrarResultados(titulo, contenido) {
+            const resultsDiv = document.getElementById('results');
+            document.getElementById('results-title').textContent = titulo;
+            document.getElementById('results-content').innerHTML = contenido;
+            resultsDiv.classList.add('active');
+
+            // Auto scroll container
+            const sidebarContent = document.querySelector('.sidebar-content');
+            setTimeout(() => {
+                sidebarContent.scrollTo({
+                    top: resultsDiv.offsetTop - 20,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        function consultaTurismo() {
+            const info = `
+                <p><strong><i class="fas fa-star" style="color:#eab308"></i> Atractivos Principales:</strong></p>
+                <ul>
+                    <li>Centro Histórico (Patrimonio Cultural)</li>
+                    <li>Iglesia de San Francisco (Madera Fina)</li>
+                    <li>Museo Municipal de Zaruma</li>
+                    <li>Mina El Sexmo (Turística)</li>
+                    <li>Mirador El Calvario</li>
+                </ul>
+                <br>
+                <p><strong><i class="fas fa-calendar-alt" style="color:#eab308"></i> Festividades:</strong></p>
+                <ul>
+                    <li>Cantonización (8 Noviembre)</li>
+                    <li>Fiestas Patronales Virgen del Carmen (Julio)</li>
+                </ul>
+            `;
+            mostrarResultados('🏛️ Turismo y Cultura', info);
+        }
+
+        function consultaMineria() {
+            const info = `
+                <p><strong>Historia:</strong></p>
+                <p style="margin-bottom:8px">Conocida como la "Sultana de El Oro", Zaruma tiene 500+ años de historia minera.</p>
+                
+                <p><strong><i class="fas fa-info-circle"></i> Situación Actual:</strong></p>
+                <ul>
+                    <li>Zona de Exclusión Minera (Casco Urbano)</li>
+                    <li>Minería Artesanal y Pequeña Escala</li>
+                    <li>Proyectos de Remediación Ambiental</li>
+                </ul>
+            `;
+            mostrarResultados('⛏️ Minería y Recursos', info);
+        }
+
+        function consultaRiesgo(tipo) {
+            const data = {
+                deslaves: { title: '🌊 Zonas de Deslaves', html: '<ul><li>Laderas inestables del casco urbano</li><li>Sectores con saturación hídrica</li><li>Vías periféricas expuestas</li></ul>' },
+                socavones: { title: '🕳️ Riesgo de Socavones', html: '<p>Derivados de galerías antiguas no técnicas.</p><ul><li>Centro Histórico (Zona Crítica)</li><li>Barrios periféricos norte</li></ul>' },
+                incendios: { title: '🔥 Amenaza de Incendios', html: '<p>Alto riesgo debido a construcción patrimonial en madera.</p><ul><li>Casco central antiguo</li><li>Falta de hidrantes en zonas altas</li></ul>' }
+            };
+            const item = data[tipo];
+            mostrarResultados(item.title, item.html);
+        }
+
+        function toggleRiesgos() {
+            document.getElementById('riesgos-menu').classList.toggle('active');
+        }
+
+        // ============================================
+        // SISTEMA DE REPORTES
+        // ============================================
+        function activarModoReporte() {
+            reportMode = true;
+            const instruction = document.getElementById('click-instruction');
+            instruction.classList.add('active'); // Show instruction
+            map.getContainer().style.cursor = 'crosshair';
+
+            // We do NOT open the modal immediately anymore, we act closer to standard GIS "Pick a point" workflow
+            // unless user wants immediate modal? Original code opened immediate. 
+            // Better UX: Show instruction "Click on map", THEN open modal.
+            // But original Code opened modal immediately? 
+            // Let's stick to "Click Map First" as it is more professional for Geoportals.
+            // "Haz clic en el mapa para marcar la ubicación del problema"
+        }
+
+        function cerrarModal() {
+            reportMode = false;
+            document.getElementById('click-instruction').classList.remove('active');
+            document.getElementById('report-modal').classList.remove('active');
+            map.getContainer().style.cursor = '';
+
+            if (reportMarker) {
+                map.removeLayer(reportMarker);
+                reportMarker = null;
+            }
+            reportCoords = null;
+            document.getElementById('report-form').reset();
+            document.getElementById('location-display').innerHTML = 'Ubicación no seleccionada';
+        }
+
+        map.on('click', function (e) {
+            if (!reportMode) return;
+
+            reportCoords = { lat: e.latlng.lat, lng: e.latlng.lng };
+
+            if (reportMarker) map.removeLayer(reportMarker);
+
+            reportMarker = L.marker([reportCoords.lat, reportCoords.lng], {
+                icon: L.divIcon({
+                    className: '',
+                    html: '<div style="font-size:24px; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.3));">📍</div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24]
+                }),
+                draggable: true // Allow fine-tuning
+            }).addTo(map);
+
+            // Update modal info
+            const locText = `Lat: ${reportCoords.lat.toFixed(5)}, Lng: ${reportCoords.lng.toFixed(5)}`;
+            document.getElementById('location-display').innerHTML = `<i class="fas fa-check"></i> ${locText}`;
+
+            // Open Modal NOW
+            document.getElementById('report-modal').classList.add('active');
+            document.getElementById('click-instruction').classList.remove('active');
+            map.getContainer().style.cursor = '';
+        });
+
+        async function enviarReporte(e) {
+            e.preventDefault();
+            if (!reportCoords) {
+                alert('⚠️ Por favor, seleccione una ubicación en el mapa.');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            const tipoValor = document.getElementById('tipo-problema').value;
+            const tiposTexto = {
+                mineria_ilegal: '⛏️ Minería Ilegal',
+                falta_agua: '💧 Falta de Agua',
+                falta_luz: '💡 Falta de Luz',
+                incendio: '🔥 Incendio',
+                deforestacion: '🌳 Deforestación',
+                deslizamientos: '⛰️ Deslizamientos'
+            };
+            const tipoTexto = tiposTexto[tipoValor] || tipoValor;
+
+            const form = {
+                tipo: tipoValor,
+                nombre: document.getElementById('nombre-reportante').value || 'Anónimo',
+                telefono: document.getElementById('telefono-reportante').value || 'No indicado',
+                descripcion: document.getElementById('descripcion').value
+            };
+
+            try {
+                // Supabase
+                await fetch(`${CONFIG.supabaseUrl}/rest/v1/reportes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': CONFIG.supabaseKey,
+                        'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        ...form,
+                        latitud: reportCoords.lat,
+                        longitud: reportCoords.lng,
+                        fecha: new Date().toISOString()
+                    })
+                });
+
+                // Telegram
+                const fechaHora = new Date().toLocaleString('es-EC');
+                const telegramMsg = `🚨 *NUEVO REPORTE - GeoData Zaruma*
+
+PR: *${tipoTexto}*
+👤 *Reportante:* ${form.nombre}
+📞 *Teléfono:* ${form.telefono}
+
+📝 *Descripción:*
+${form.descripcion}
+
+📍 *Ubicación:*
+Lat: ${reportCoords.lat.toFixed(6)}
+Lng: ${reportCoords.lng.toFixed(6)}
+
+�️ *Ver en mapa:*
+https://www.google.com/maps?q=${reportCoords.lat},${reportCoords.lng}
+
+🕐 *Fecha:* ${fechaHora}`;
+
+                await fetch(`https://api.telegram.org/bot${CONFIG.telegramToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CONFIG.telegramChatId,
+                        text: telegramMsg,
+                        parse_mode: 'Markdown'
+                    })
+                });
+
+                alert('✅ Reporte enviado con éxito. Gracias por colaborar.');
+                cerrarModal();
+
+            } catch (error) {
+                console.error(error);
+                alert('❌ Error al enviar. Intente nuevamente.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Reporte';
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function () {
+            setupLayerControls();
+
+            document.getElementById('btn-turismo').addEventListener('click', consultaTurismo);
+            document.getElementById('btn-mineria').addEventListener('click', consultaMineria);
+            document.getElementById('btn-riesgos').addEventListener('click', toggleRiesgos);
+
+            document.getElementById('btn-deslaves').addEventListener('click', () => consultaRiesgo('deslaves'));
+            document.getElementById('btn-socavones').addEventListener('click', () => consultaRiesgo('socavones'));
+            document.getElementById('btn-incendios').addEventListener('click', () => consultaRiesgo('incendios'));
+
+            document.getElementById('btn-reportar').addEventListener('click', activarModoReporte);
+            document.getElementById('close-modal').addEventListener('click', cerrarModal);
+            document.getElementById('report-form').addEventListener('submit', enviarReporte);
+
+            document.getElementById('clave-catastral').addEventListener('input', function (e) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => buscarCatastro(e.target.value), 500);
+            });
+
+            // Toggle Mobile Menu
+            const sidebar = document.getElementById('sidebar');
+            document.getElementById('menu-toggle').addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+
+            // Initial Marker
+            L.marker([-3.68, -79.61]).addTo(map)
+                .bindPopup('<b>Zaruma</b><br>Patrimonio Cultural')
+                .openPopup();
+        });
+    </script>
+</body>
+
+</html>
